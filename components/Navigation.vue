@@ -1,5 +1,7 @@
 <template>
-  <UDashboardSlideover v-model="open" title="Notifications" />
+  <!-- Öffnender Tag für UPageCard -->
+  <UPageCard class="flex flex-row text-4xl w-full md:justify-center"
+            :ui="{ body: { base: 'flex flex-row' } }">
     <nav class="navigation">
       <div class="logo">
         <img src="@/assets/images/logo-white.svg" alt="Logo">
@@ -7,36 +9,36 @@
       
       <ul>
         <li>
-          <NuxtLink to="/">Summary</NuxtLink>
+          <NuxtLink to="/summary" class="text-lg hover:text-primary">Summary</NuxtLink> <!-- Verkleinere die Schrift mit 'text-sm' -->
         </li>
         <li>
-          <NuxtLink to="/add-task">Add Task</NuxtLink>
+          <NuxtLink to="/add-task" class="text-lg hover:text-primary">Add Task</NuxtLink>
         </li>
         <li>
-          <NuxtLink to="/board">Board</NuxtLink>
+          <NuxtLink to="/board" class="text-lg hover:text-primary">Board</NuxtLink>
         </li>
         <li>
-          <NuxtLink to="/contacts">Contacts</NuxtLink>
+          <NuxtLink to="/contacts" class="text-lg hover:text-primary">Contacts</NuxtLink>
         </li>
       </ul>
     </nav>
-  </template>
-  
-  <script>
-  export default {
-    name: 'Navigation',
-  };
-  </script>
-  
-  <style scoped>
-  .navigation {
+  </UPageCard>
+</template>
+
+<script>
+export default {
+  name: 'Navigation',
+};
+</script>
+
+<style scoped>
+.navigation {
   padding: 1rem;
   height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   width: 232px;
-  border: 2px solid green; /* Grüner Rand hinzugefügt */
 }
 
 .logo {
@@ -59,15 +61,4 @@ li {
   margin-bottom: 1rem;
 }
 
-a {
-  color: white;
-  text-decoration: none;
-  font-size: 1.2rem;
-}
-
-a:hover {
-  text-decoration: underline;
-}
-
-  </style>
-  
+</style>
