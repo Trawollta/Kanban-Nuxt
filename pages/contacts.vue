@@ -1,17 +1,21 @@
 <template>
   <div class="content">
     <div class="contacts-container">
-      <!-- Kontaktliste -->
+      <!-- Contact List -->
       <div v-if="!showDetailsOnMobile" class="contacts-list">
-        <!-- Button zum Hinzufügen eines neuen Kontakts -->
-        <div class="add-contact-btn" @click="showPopup = true">
+        <div class="add-contact-btn" @click="showOverlay = true">
           Add new Contact <span class="icon">➕</span>
         </div>
 
-        <!-- Kontaktliste nach Buchstaben gruppiert -->
+        <!-- Contacts grouped by letter -->
         <div v-for="group in groupedContacts" :key="group.letter" class="contact-group">
           <h2>{{ group.letter }}</h2>
-          <div v-for="contact in group.contacts" :key="contact.id" class="contact-item" @click="selectContact(contact)">
+          <div
+            v-for="contact in group.contacts"
+            :key="contact.id"
+            class="contact-item"
+            @click="selectContact(contact)"
+          >
             <div class="contact-avatar" :style="{ backgroundColor: contact.color }">
               {{ contact.initials }}
             </div>
@@ -23,9 +27,12 @@
         </div>
       </div>
 
-      <!-- Detailansicht des ausgewählten Kontakts -->
+      <!-- Selected Contact Details -->
       <div v-if="selectedContact && (!isMobile || showDetailsOnMobile)" class="contact-detail">
-        <!-- Zurück-Pfeil nur bei mobiler Ansicht -->
+        <div class="contacts-title">
+          <h1>Contacts <span class="subtitle">| Better with a team</span></h1>
+        </div>
+
         <div v-if="isMobile" class="back-btn" @click="backToList">← Back to Contacts</div>
 
         <div class="contacts-headline">
@@ -35,8 +42,8 @@
           <div class="contact-info">
             <h2>{{ selectedContact.name }}</h2>
             <div class="contact-actions">
-              <UButton icon="edit" @click="editContact(selectedContact)">Edit</UButton>
-              <UButton icon="trash" @click="deleteContact(selectedContact.id)">Delete</UButton>
+              <button @click="editContact(selectedContact)">Edit</button>
+              <button @click="deleteContact(selectedContact.id)">Delete</button>
             </div>
           </div>
         </div>
@@ -49,21 +56,41 @@
       </div>
     </div>
 
-    <!-- Popup zum Hinzufügen eines Kontakts -->
-    <div v-if="showPopup" class="popup">
-      <div class="popup-content">
-        <h2>Add Contact</h2>
-        <form @submit.prevent="addContact">
-          <label for="name">Name:</label>
-          <input type="text" id="name" v-model="newContactName" required />
+    <!-- Overlay for Adding Contact -->
+    <div v-if="showOverlay" class="overlay">
+      <UPageCard class="flex text-4xl border-2 border-primary">
+        <!-- <div class="overlay-content"> -->
+          <div class="">
+            <img src="@/assets/images/logo-white.svg" alt="Logo" />
+            <div class="text-left space-y-2">
+    <h2 class="text-3xl font-bold text-primary">Add Contact</h2>
+    <p class="text-2xl text-primary">Tasks are better with a team!</p>
+</div>
+          </div>
 
-          <label for="email">Email:</label>
-          <input type="email" id="email" v-model="newContactEmail" required />
-
-          <UButton type="submit">Save Contact</UButton>
-          <UButton type="button" @click="showPopup = false">Cancel</UButton>
-        </form>
-      </div>
+          <div class="whiteside">
+            <span class="close-btn" @click="closeOverlay">✖</span>
+            <form class="overlay-form" @submit.prevent="addContact">
+              <div class="form-group">
+                <input type="text" id="surname" v-model="newContact.surname" placeholder="Surname Name" required />
+                <span class="input-icon">👤</span>
+              </div>
+              <div class="form-group">
+                <input type="email" id="email" v-model="newContact.email" placeholder="Email" required />
+                <span class="input-icon">📧</span>
+              </div>
+              <div class="form-group">
+                <input type="tel" id="phone" v-model="newContact.phone" placeholder="Phone" required />
+                <span class="input-icon">📞</span>
+              </div>
+              <div class="overlay-actions">
+                <UButton type="button"@click="closeOverlay">Cancel ✖</UButton>
+                <UButton type="submit">Create Contact ✔</UButton>
+              </div>
+            </form>
+          </div>
+        <!-- </div> -->
+      </UPageCard>
     </div>
   </div>
 </template>
@@ -73,24 +100,24 @@ import { ref, computed, onMounted } from 'vue';
 import { useContactsStore } from '~/stores/contacts';
 
 const store = useContactsStore();
-const showPopup = ref(false);
-const newContactName = ref('');
-const newContactEmail = ref('');
+const showOverlay = ref(false);
+const newContact = ref({
+  surname: '',
+  email: '',
+  phone: ''
+});
 const selectedContact = ref(null);
 const showDetailsOnMobile = ref(false);
+const isMobile = ref(false);
 
-// Erkenne, ob die Ansicht mobil ist (kleiner als 1200px)
-const isMobile = ref(window.innerWidth < 1200);
-window.addEventListener('resize', () => {
-  isMobile.value = window.innerWidth < 1200;
-});
-
-// Lade Kontakte von Firebase
 onMounted(() => {
+  isMobile.value = window.innerWidth < 1200;
+  window.addEventListener('resize', () => {
+    isMobile.value = window.innerWidth < 1200;
+  });
   store.fetchContacts();
 });
 
-// Funktion zum Auswählen eines Kontakts
 function selectContact(contact) {
   selectedContact.value = contact;
   if (isMobile.value) {
@@ -102,24 +129,29 @@ function backToList() {
   showDetailsOnMobile.value = false;
 }
 
-// Funktion zum Hinzufügen eines neuen Kontakts
 function addContact() {
-  if (newContactName.value && newContactEmail.value) {
-    const newContact = {
-      name: newContactName.value,
-      email: newContactEmail.value,
+  if (newContact.value.surname && newContact.value.email) {
+    const newContactData = {
+      name: newContact.value.surname,
+      email: newContact.value.email,
+      phone: newContact.value.phone,
       color: getRandomColor(),
-      initials: newContactName.value.split(' ').map(word => word[0]).join(''),
+      initials: newContact.value.surname
+        .split(' ')
+        .map(word => word[0])
+        .join(''),
     };
 
-    store.addContact(newContact);
-    showPopup.value = false;
-    newContactName.value = '';
-    newContactEmail.value = '';
+    store.addContact(newContactData);
+    closeOverlay();
   }
 }
 
-// Funktion zur Generierung einer zufälligen Farbe
+function closeOverlay() {
+  showOverlay.value = false;
+  newContact.value = { surname: '', email: '', phone: '' };
+}
+
 function getRandomColor() {
   const letters = '0123456789ABCDEF';
   let color = '#';
@@ -129,7 +161,6 @@ function getRandomColor() {
   return color;
 }
 
-// Gruppiere Kontakte nach dem ersten Buchstaben
 const groupedContacts = computed(() => {
   let groups = {};
   store.contacts.forEach(contact => {
@@ -150,19 +181,6 @@ const groupedContacts = computed(() => {
       contacts: groups[letter]
     }));
 });
-
-// Funktion zum Bearbeiten eines Kontakts
-function editContact(contact) {
-  console.log('Edit contact:', contact);
-}
-
-// Funktion zum Löschen eines Kontakts
-function deleteContact(contactId) {
-  store.deleteContact(contactId);
-  if (selectedContact.value && selectedContact.value.id === contactId) {
-    selectedContact.value = null;
-  }
-}
 </script>
 
 <style scoped>
@@ -173,32 +191,137 @@ function deleteContact(contactId) {
   width: 100%;
 }
 
-.contacts-container {
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  border: 40px;
+}
+
+.overlay-content {
+  display: flex;
+  border-radius: 15px;
+  overflow: hidden;
+  width: 80%;
+  max-width: 900px;
+  height: 450px;
+}
+
+.darkside {
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 40%;
+  color: white;
+}
+
+.darkside h2 {
+  font-size: 24px;
+  margin-top: 15px;
+}
+
+.darkside p {
+  font-size: 16px;
+  color: #3b82f6;
+}
+
+.whiteside {
+  flex-grow: 1;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  font-size: 20px;
+  cursor: pointer;
+  color: #888;
+}
+
+.form-group {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 10px 40px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 16px;
+}
+
+.input-icon {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
+  font-size: 18px;
+  color: #888;
+}
+
+.overlay-actions {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  max-width: 1200px;
-  padding: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  border-radius: 10px;
-  width: 100%;
+  margin-top: 20px;
 }
 
-.contacts-list {
-  width: 70%;
-  border-right: 1px solid #e2e8f0;
-  padding-right: 20px;
-  box-shadow: 4px 0px 6px 0px #00000010;
+.cancel-btn,
+.create-btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
 }
 
-.contact-detail {
-  width: 70%;
-  padding-left: 40px;
+.cancel-btn {
+  background-color: white;
+  color: #333;
+  border: 1px solid #ccc;
+}
+
+.create-btn {
+  background-color: #1f2937;
+  color: white;
+  border: none;
+}
+
+
+
+
+.contact-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%; /* Ensures the avatar is circular */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  color: white;
+  margin-right: 15px;
+  font-size: 18px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+  background-color: #1f2937; /* Default color if none is set */
 }
 
 .contact-item {
   display: flex;
-  align-items: center;
+  align-items: center; /* Vertically aligns avatar and name */
   padding: 15px;
   margin-bottom: 10px;
   cursor: pointer;
@@ -214,15 +337,16 @@ function deleteContact(contactId) {
 .contact-avatar {
   width: 48px;
   height: 48px;
-  border-radius: 50%;
+  border-radius: 50%; /* Ensures the avatar is circular */
   display: flex;
   justify-content: center;
   align-items: center;
   font-weight: bold;
   color: white;
-  margin-right: 15px;
+  margin-right: 15px; /* Adds space between avatar and name */
   font-size: 18px;
   box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+  background-color: #1f2937; /* Default color if none is set */
 }
 
 .contact-info h3 {
@@ -237,68 +361,25 @@ function deleteContact(contactId) {
   color: #3b82f6;
 }
 
-.contacts-headline {
+.contacts-container {
   display: flex;
-  align-items: center;
-  gap: 20px;
-  margin-bottom: 32px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-.detailsLogo {
-  width: 120px;
-  height: 120px;
-  display: inline-block;
-  border-radius: 50%;
-  background-color: #333;
-  color: #fff;
-  font-weight: bold;
-  text-align: center;
-  line-height: 120px;
-  font-size: 60px;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.1);
+.contacts-list {
+  width: 35%; /* Passe die Breite der Liste an */
+  padding-right: 20px;
+  border-right: 1px solid #e2e8f0;
+  overflow-y: auto;
 }
 
-.contact-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
+.contact-detail {
+  width: 65%; /* Passe die Breite der Detailansicht an */
+  padding-left: 20px;
+  overflow-y: auto;
 }
 
-.contact-actions button {
-  padding: 8px 15px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
 
-.contact-actions button:hover {
-  background-color: #0056b3;
-}
-
-.add-contact-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 20px;
-  padding: 10px;
-  background-color: #ff4d4f;
-  color: white;
-  border-radius: 8px;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.add-contact-btn:hover {
-  background-color: #ff6f61;
-}
-
-/* Button zum Zurückkehren bei mobiler Ansicht */
-.back-btn {
-  cursor: pointer;
-  margin-bottom: 20px;
-  font-size: 16px;
-  color: #007bff;
-}
 </style>

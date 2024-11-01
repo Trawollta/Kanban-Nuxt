@@ -26,19 +26,15 @@
         </div>
       </div>
 
-      <div class="right-column">
+
         <!-- <div class="form-group">
           <label>Due Date<span class="required">*</span></label>
           <input v-model="state.targetDate" type="date" required />
         </div> -->
-        <div class="date">
-          <div class="uselessAstriks">
-            <h2>Due Date</h2>*
-          </div>
-          <input id="due" class="dueInput" type="date" data-date="" data-date-format="DD MMMM YYYY"
-            value="${currentDate.currentYear}-${currentDate.currentMonth}-${currentDate.currentDay}">
-          <div class="Taskerror" style="display: none;" id="errorDate">You can not select a date that is in the Past
-          </div>
+        <div class="right-column">
+        <div class="form-group">
+          <label>Due Date<span class="required">*</span></label>
+          <input v-model="state.targetDate" type="date" class="date-input" required />
         </div>
 
         <div class="form-group">
@@ -186,17 +182,23 @@ function clearForm() {
 </script>
 
 <style scoped>
+
 .add-task-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
 }
 
+.task-header {
+  width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
 .task-header h1 {
-  font-size: 36px;
-  font-weight: bold;
-  text-align: center;
-  margin-bottom: 30px;
+  font-size: 61px;
+  font-weight: 700;
+  margin-top: 0;
 }
 
 .task-form {
@@ -374,6 +376,15 @@ function clearForm() {
 .required {
   color: red;
   margin-left: 5px;
+}
+
+.date-input {
+  width: 100%;
+  padding: 15px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  outline: none;
 }
 
 /* Responsive Anpassung ab 900px */

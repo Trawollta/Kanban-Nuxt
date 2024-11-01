@@ -6,6 +6,12 @@
       <span class="text-lg text-gray-500">Key Metrics at a Glance</span>
     </div>
 
+
+    <div class="mt-8">
+      <h2 class="text-3xl font-bold text-center">
+        Good afternoon, {{ userName }}!
+      </h2>
+    </div>
     <!-- Main Metrics Layout -->
     <div class="grid grid-cols-2 gap-8 mb-8">
       <!-- First row: To-do and Done -->
@@ -26,24 +32,27 @@
       </ULandingCard>
     </div>
 
-    <!-- Deadline Section (Center row) -->
-    <div class="grid grid-cols-1 mb-8">
-      <ULandingCard class="hover-card">
-        <div class="flex justify-between items-center p-4">
-          <div class="flex items-center">
-            <img src="@/assets/images/Prio_alta.png" class="mr-4" alt="Urgent" />
-            <div>
-              <span class="text-2xl font-bold">{{ urgentTasks.length }}</span>
-              <span class="text-red-500">Urgent</span>
-            </div>
-          </div>
-          <div class="text-right">
-            <span class="text-xl font-bold">August 26, 2024</span>
-            <p class="text-gray-500">Upcoming Deadline</p>
-          </div>
+<!-- Deadline Section (Center row) -->
+<div class="grid grid-cols-1 mb-8">
+  <ULandingCard class="hover-card">
+    <div class="flex justify-center items-center p-4 space-x-8">
+      <div class="flex items-center">
+        <img src="@/assets/images/Prio_alta.png" class="mr-2" alt="Urgent" />
+        <div>
+          <span class="text-2xl font-bold">{{ urgentTasks.length }}</span>
+          <span class="text-red-500">Urgent</span>
         </div>
-      </ULandingCard>
+      </div>
+      <div class="text-right">
+        <span class="text-xl font-bold">August 26, 2024</span>
+        <p class="text-gray-500">Upcoming Deadline</p>
+      </div>
     </div>
+  </ULandingCard>
+</div>
+
+
+
 
     <!-- Bottom Row: Tasks in Board, Progress, and Awaiting Feedback -->
     <div class="grid grid-cols-3 gap-8">
@@ -70,11 +79,6 @@
     </div>
 
     <!-- Greeting with user's name -->
-    <div class="mt-8">
-      <h2 class="text-3xl font-bold text-center">
-        Good afternoon, {{ userName }}!
-      </h2>
-    </div>
   </div>
 </template>
 
@@ -86,14 +90,14 @@ export default {
   name: 'SummaryComponent',
   data() {
     return {
-      userName: '', // Variable für den Benutzernamen
-      tasks: [], // Alle Aufgaben des Benutzers
-      todoTasks: [], // Aufgaben im To-Do Status
-      doneTasks: [], // Aufgaben im Done Status
-      urgentTasks: [], // Dringende Aufgaben
-      tasksInBoard: [], // Aufgaben auf dem Board
-      tasksInProgress: [], // Aufgaben in Bearbeitung
-      awaitingFeedbackTasks: [] // Aufgaben, die Feedback erwarten
+      userName: '',
+      tasks: [], 
+      todoTasks: [],
+      doneTasks: [], 
+      urgentTasks: [],
+      tasksInBoard: [],
+      tasksInProgress: [], 
+      awaitingFeedbackTasks: [] 
     };
   },
   async mounted() {

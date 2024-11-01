@@ -1,29 +1,60 @@
 <template>
   <UContainer>
     <div class="board">
+      <!-- Header mit Titel, Suchleiste und Add Task Button -->
+      <div class="board-header">
+        <h1>Board</h1>
+        <div class="board-controls">
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Find task"
+            class="search-bar"
+          />
+          <button @click="openAddTaskOverlay" class="add-task-btn">
+            Add Task <span class="icon">+</span>
+          </button>
+        </div>
+      </div>
+
       <!-- Columns for each status -->
-      <div
-        class="column"
-        v-for="status in statuses"
-        :key="status.id"
-        :data-status-id="status.id"
-      >
-        <h2>{{ status.title }}</h2>
-        <Draggable
-          v-model="tasksByStatus[status.id]"
-          :group="'tasks'"
-          @end="onEnd"
-          class="tasks"
-          itemKey="id"
+      <div class="columns">
+        <div
+          class="column"
+          v-for="status in statuses"
+          :key="status.id"
+          :data-status-id="status.id"
         >
-          <template #item="{ element }">
-            <div v-if="element && element.id" class="task-card-wrapper">
-              <div @click="openOverlay(element)">
-                <TaskCard :task="element" />
+          <h2>{{ status.title }}</h2>
+          <Draggable
+            v-model="filteredTasksByStatus[status.id]"
+            :group="'tasks'"
+            @end="onEnd"
+            class="tasks"
+            itemKey="id"
+          >
+            <template #item="{ element }">
+              <div v-if="element && element.id" class="task-card-wrapper">
+                <div @click="openOverlay(element)">
+                  <TaskCard :task="element" />
+                </div>
               </div>
-            </div>
-          </template>
-        </Draggable>
+            </template>
+          </Draggable>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overlay for adding a new task -->
+    <div v-if="showAddTaskOverlay" class="overlay" @click="closeAddTaskOverlay">
+      <div class="overlay-content" @click.stop>
+        <h2>Add New Task</h2>
+        <form @submit.prevent="addTask">
+          <input type="text" v-model="newTaskTitle" placeholder="Task Title" required />
+          <textarea v-model="newTaskDescription" placeholder="Task Description" required></textarea>
+          <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg">Save Task</button>
+          <button type="button" @click="closeAddTaskOverlay" class="bg-gray-300 text-black px-4 py-2 rounded-lg">Cancel</button>
+        </form>
       </div>
     </div>
 
@@ -50,7 +81,6 @@ import TaskCard from '~/components/TaskCard.vue';
 import { useNuxtApp } from '#app';
 import Draggable from 'vuedraggable';
 
-// Define the statuses
 const statuses = [
   { id: 'todo', title: 'To Do' },
   { id: 'in-progress', title: 'In Progress' },
@@ -58,10 +88,13 @@ const statuses = [
   { id: 'done', title: 'Done' }
 ];
 
-// State management for tasks and the selected task
 const tasks = ref([]);
 const selectedTask = ref(null);
 const showOverlay = ref(false);
+const showAddTaskOverlay = ref(false);
+const newTaskTitle = ref('');
+const newTaskDescription = ref('');
+const searchQuery = ref('');
 
 // Fetch tasks from Firebase on component mount
 onMounted(async () => {
@@ -74,8 +107,12 @@ onMounted(async () => {
   }
 });
 
-// Categorize tasks by status
-const tasksByStatus = computed(() => {
+// Filtered tasks based on search query
+const filteredTasksByStatus = computed(() => {
+  const filteredTasks = tasks.value.filter(task =>
+    task.title.toLowerCase().includes(searchQuery.value.toLowerCase())
+  );
+
   const statusMapping = {
     'todo': [],
     'in-progress': [],
@@ -83,89 +120,105 @@ const tasksByStatus = computed(() => {
     'done': []
   };
 
-  tasks.value.forEach(task => {
+  filteredTasks.forEach(task => {
     statusMapping[task.status].push(task);
   });
 
   return statusMapping;
 });
 
-// Open overlay and display selected task
 function openOverlay(task) {
   selectedTask.value = task;
   showOverlay.value = true;
 }
 
-// Close overlay
 function closeOverlay() {
   showOverlay.value = false;
 }
 
-// Edit task
-function editTask(task) {
-  console.log('Edit task:', task);
+function openAddTaskOverlay() {
+  showAddTaskOverlay.value = true;
 }
 
-// Delete task
-async function deleteTask(taskId) {
-  const { $db } = useNuxtApp();
-  try {
-    await deleteDoc(doc($db, 'tasks', taskId));
-    tasks.value = tasks.value.filter(task => task.id !== taskId);
-    closeOverlay(); // Schließe Overlay nach dem Löschen
-  } catch (error) {
-    console.error('Error deleting task:', error);
-  }
+function closeAddTaskOverlay() {
+  showAddTaskOverlay.value = false;
 }
 
-// Update task status after drag-and-drop
-async function onEnd(event) {
-  const movedTask = event.item?._underlying_vm;
-  
-  // Sicherstellen, dass movedTask definiert ist, bevor wir darauf zugreifen
-  if (!movedTask || !movedTask.id) {
-    console.error('Moved task is undefined or missing id.');
-    return;
-  }
-
-  const newStatus = event.to.closest('.column')?.dataset.statusId;
-
-  if (!newStatus) {
-    console.error('New status is missing.');
-    return;
-  }
-
-  const oldStatus = movedTask.status;
-  
-  // Optimistisch den neuen Status setzen
-  movedTask.status = newStatus;
-
-  try {
-    const { $db } = useNuxtApp();
-    const taskDocRef = doc($db, 'tasks', movedTask.id);
-    await updateDoc(taskDocRef, { status: newStatus });
-    
-    console.log('Task status updated:', movedTask);
-  } catch (error) {
-    console.error('Error updating task status:', error);
-    // Falls der API-Aufruf fehlschlägt, den Status zurücksetzen
-    movedTask.status = oldStatus;
-  }
+function addTask() {
+  const newTask = {
+    title: newTaskTitle.value,
+    description: newTaskDescription.value,
+    status: 'todo'
+  };
+  tasks.value.push(newTask);
+  closeAddTaskOverlay();
 }
 </script>
 
 <style scoped>
 .board {
+  padding: 20px;
+}
+
+.board-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.board-header h1 {
+  font-size: 61px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.column h2 {
+  font-weight: bold;
+  font-size: 1.2rem; 
+  margin-bottom: 10px; 
+}
+
+
+.board-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.search-bar {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 1rem;
+  width: 200px;
+}
+
+.add-task-btn {
+  background-color: #1e40af;
+  color: white;
+  padding: 10px 15px;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.add-task-btn:hover {
+  background-color: #1d4ed8;
+}
+
+.columns {
   display: flex;
   gap: 20px;
-  padding: 20px;
   justify-content: space-between;
 }
 
 .column {
   flex: 1;
   padding: 10px;
-  background-color: #f4f4f4;
   border-radius: 8px;
   min-height: 600px;
 }
@@ -185,10 +238,6 @@ async function onEnd(event) {
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
-.draggable-dragging {
-  opacity: 0.5;
-}
-
 /* Overlay styles */
 .overlay {
   position: fixed;
@@ -204,7 +253,6 @@ async function onEnd(event) {
 }
 
 .overlay-content {
-  background: white;
   padding: 20px;
   border-radius: 8px;
   width: 60%;
